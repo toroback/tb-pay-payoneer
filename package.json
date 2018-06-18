@@ -1,0 +1,25 @@
+{
+  "name": "tb-pay-payoneer",
+  "version": "1.0.0",
+  "description": "Pay service for tb-pay to extend Toroback functinoality",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toroback/tb-pay-payoneer.git"
+  },
+  "keywords": [
+    "toroback",
+    "backend",
+    "pay",
+    "payoneer"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/toroback/tb-pay-payoneer/issues"
+  },
+  "homepage": "https://github.com/toroback/tb-pay-payoneer#readme"
+}
