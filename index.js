@@ -16,7 +16,7 @@
  */
 
 
-// var request = require('request');
+var request = require('request');
 
 
 // var url;
@@ -45,7 +45,9 @@ class Adapter{
     //   // timeout     : client.options.timeout || 1000
     // }
 
-    // this.url = client.options.url || defaultUrl;
+    this.url = client.options.url;
+    this.username = client.options.username;
+    this.password = client.options.password;
     // this.port = client.options.port || defaultPort;
     // this.multiCurrency = client.options.mcp == true;
   }
@@ -135,6 +137,34 @@ class Adapter{
         }  
       };
       resolve(res);
+    });
+  }
+
+  echo(data){
+    return new Promise((resolve, reject) => {
+      
+      let programId = data.programId;
+      
+      GET(this.url +"/"+ programId + "/echo", {auth:{user: this.username, pass: this.password}})
+        .then(resolve)
+        .catch(reject);
+      
+    });
+  }
+
+  createRegistrationLink(data){
+    return new Promise((resolve, reject) => {
+      // let uid = data.payload.uid;
+      let programId = data.programId;
+      let forLogin = data.forLogin;
+      
+      this.log.debug("registrationLink Data "+ JSON.stringify(data.payload));
+      let payload = mapRegistrationLinkPayload(data.payload);//{payee_id: uid};
+      POST(this.url +"/"+ programId + "/payees/" + (forLogin ? "login-link" : "registration-link"), {payload: payload, auth:{user: this.username, pass: this.password}})
+        .then(resp=>{
+          resolve({link: resp[forLogin ? "login_link" : "registration_link"]})
+        })
+        .catch(reject);
     });
   }
 
@@ -228,27 +258,125 @@ class Adapter{
 
 }
 
-// function req(url, port, payload){
-//   return new Promise((resolve, reject)=>{
-//     request.post({
-//       url:  url,
-//       port: port,
-//       method:"POST",
-//       headers:{
-//           'Content-Type': 'application/xml',
-//       },
-//        body: payload
-//     },
-//     (error, response, body)=> {
-//       if (error) reject(error);
-//       else{
-//         parseString(body, (err, result) =>{
-//           if (err) reject(err);
-//           else resolve(result);
-//         });         
-//       }
-//     });
-//   })
-// }
+function mapRegistrationLinkPayload(payload){
+  let ret = {};
+
+  if(payload.uid)              ret.payee_id             = payload.uid;
+  if(payload.sessionId)        ret.client_session_id    = payload.sessionId;
+  if(payload.redirectUrl)      ret.redirect_url         = payload.redirectUrl;
+  if(payload.redirectTime)     ret.redirect_time        = payload.redirectTime;
+  if(payload.payoutMethods)    ret.payout_methods_list  = payload.payoutMethods;
+  if(payload.registrationMode) ret.registration_mode    = payload.registrationMode;
+  if(payload.lockType)         ret.lock_type            = payload.lockType;
+  if(payload.languageId)       ret.language_id          = payload.languageId;
+
+  //DATOS DE PAYEE
+  if(payload.payee){
+    let payee = payload.payee;
+    ret.payee = {};
+
+    if(payee.type) ret.payee.type = payee.type;
+
+     //DATOS DE COMPANY
+     if(payee.company){
+      let company = payee.company;
+      ret.payee.company = {};
+
+      if(company.legalType)           ret.payee.company.legal_type              = company.legalType;
+      if(company.name)                ret.payee.company.name                    = company.name;
+      if(company.url)                 ret.payee.company.url                     = company.url;
+      if(company.incorporatedCountry) ret.payee.company.incorporated_country    = company.incorporatedCountry;
+      if(company.incorporatedState)   ret.payee.company.incorporated_state      = company.incorporatedState;
+    }
+
+    //DATOS DE CONTACT
+    if(payee.contact){
+      let contact = payee.contact;
+      ret.payee.contact = {};
+
+      if(contact.firstName)   ret.payee.contact.first_name    = contact.firstName;
+      if(contact.lastName)    ret.payee.contact.last_name     = contact.lastName;
+      if(contact.email)       ret.payee.contact.email         = contact.email;
+      if(contact.birthDate)   ret.payee.contact.date_of_birth = contact.birthDate;
+      if(contact.mobile)      ret.payee.contact.mobile        = contact.mobile;
+      if(contact.phone)       ret.payee.contact.phone         = contact.phone; 
+    }
+
+    //DATOS DE ADDRESS
+    if(payee.address){
+      let address = payee.address;
+      ret.payee.address = {};
+
+      if(address.country)       ret.payee.address.country         = address.country;
+      if(address.state)         ret.payee.address.state           = address.state;
+      if(address.addressLine1)  ret.payee.address.address_line_1  = address.addressLine1;
+      if(address.addressLine2)  ret.payee.address.address_line_2  = address.addressLine2;
+      if(address.city)          ret.payee.address.city            = address.city;
+      if(address.zipCode)       ret.payee.address.zip_code        = address.zipCode; 
+    }
+   
+  }
+
+  console.log("Mapped result " + JSON.stringify(ret));
+  return ret;
+}
+
+function POST(url, data){
+  return new Promise((resolve, reject)=>{
+    request.post({
+      url:  url,
+      // port: port,
+      method:"POST",
+      headers:{
+          'Content-Type': 'application/json',
+      },
+      auth: data.auth || undefined,
+      body: JSON.stringify( data.payload)
+    },
+    (error, response, body)=> {
+      if (error) reject(error);
+      else{
+        resolve(JSON.parse(body));
+        // parseString(body, (err, result) =>{
+        //   if (err) reject(err);
+        //   else resolve(result);
+        // });         
+      }
+    });
+  })
+}
+
+function GET(url, data){
+  console.log("GET url "+ url);
+  // return new Promise((resolve, reject)=>{
+  //   request(url, function (error, response, body) {
+  //     if(error) reject(error);
+  //     else{
+  //       resolve(JSON.parse(body));
+  //     }
+  //   });
+  // })
+  return new Promise((resolve, reject)=>{
+    request.get({
+      url:  url,
+      // port: port,
+      method:"GET",
+      headers:{
+          'Content-Type': 'application/json',
+      },
+      auth: data.auth || undefined
+    },
+    (error, response, body)=> {
+      if (error) reject(error);
+      else{
+        resolve(JSON.parse(body));
+        // parseString(body, (err, result) =>{
+        //   if (err) reject(err);
+        //   else resolve(result);
+        // });         
+      }
+    });
+  })
+}
 
 module.exports = Adapter;
