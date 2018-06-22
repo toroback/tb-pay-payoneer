@@ -48,14 +48,14 @@ class Adapter{
     return new Promise((resolve, reject) => {
       console.log("processPayoneerWebhook DATA" + JSON.stringify(data));
 
-      let ref = undefined;
-      let rid = undefined;
-      let uid = data.payeeid;
+      // let ref = undefined;
+      // let rid = undefined;
+      // let uid = data.payeeid;
 
       let promise = undefined;
       if(data.type == "account"){
       // if(data.APPROVED || data.DECLINE || data.ReusePayeeID){
-        ref = "account"; //No tiene porqué ser el mismo que data.type, por eso no se hace "ref = data.type"
+        // ref = "account"; //No tiene porqué ser el mismo que data.type, por eso no se hace "ref = data.type"
         
         promise = this.processAccountWebhook(data);
 
@@ -63,10 +63,14 @@ class Adapter{
       // }else if(data.PAYMENT || data.LOADCC || data.LOADiACH || data.PaperCheck || data.CancelPayment || data.BankTranferPaymentFailed ){
       // }else if(data.PAYMENT || data.LoadCard ||/* data.LoadBank || data.LoadPaperCheck || data.LoadPayPal ||*/ data.LoadMoney || data.CancelPayment || data.BankTranferPaymentFailed ){  
       }else if(data.type == "transaction"){  
-        ref = "transaction";
+        // ref = "transaction";
 
         promise = this.processTransactionWebhook(data);
 
+      }else if(data.type == "unhandled"){
+        
+      }else{
+        throw new Error("Unknown webhook type");
       }
       // else{
       //   throw new Error("Unknown webhook type");
