@@ -40,13 +40,16 @@ class Adapter{
     this.url = client.options.url;
     this.username = client.options.username;
     this.password = client.options.password;
+    this.programs = client.options.programs;
+
+    // console.log("loaded programs "+ JSON.stringify(this.programs));
     // this.port = client.options.port || defaultPort;
     // this.multiCurrency = client.options.mcp == true;
   }
 
   processWebhook(data){
     return new Promise((resolve, reject) => {
-      console.log("processPayoneerWebhook DATA" + JSON.stringify(data));
+      this.log.debug("processPayoneerWebhook DATA" + JSON.stringify(data));
 
       // let ref = undefined;
       // let rid = undefined;
@@ -158,15 +161,19 @@ class Adapter{
     });
   }
 
-  echo(data){
+  echo(){
     return new Promise((resolve, reject) => {
       
-      let programId = data.programId;
+      let defaultProgram = this.getDefaultProgram();
+      let programId = defaultProgram ? defaultProgram.id : undefined;
       
-      GET(this.url +"/"+ programId + "/echo", {auth:{user: this.username, pass: this.password}})
-        .then(resolve)
-        .catch(reject);
-      
+      if(!programId){
+        reject({error:App.err.notFound("No programId found")});
+      }else{
+        GET(this.url +"/"+ programId + "/echo", {auth:{user: this.username, pass: this.password}})
+          .then(resolve)
+          .catch(reject);
+      }
     });
   }
 
@@ -174,75 +181,107 @@ class Adapter{
     return new Promise((resolve, reject) => {
       this.log.debug("registrationLink Data "+ JSON.stringify(data));
       // let uid = data.payload.uid;
-      let programId = data.programId;
+      let programId = data.account && data.account.data ? data.account.data.programId : undefined;
       let forLogin = data.forLogin;
       
-      
-      let payload = mapRegistrationLinkPayload(data.payload, forLogin);//{payee_id: uid};
-      this.log.debug("registrationLink request payload "+ JSON.stringify(payload));
-      let reqUrl = this.url +"/"+ programId + "/payees/" + (forLogin ? "login-link" : "registration-link");
-      POST(reqUrl, {payload: payload, auth:{user: this.username, pass: this.password}})
-        .then(resp=>{
-          this.log.debug("registrationLink resp "+ JSON.stringify(resp));
-          let link = resp[forLogin ? "login_link" : "registration_link"];
-          if(link){
-            resolve({link: link})
-          }else{
-            reject(resp);
-          }
-        })
-        .catch(reject);
+      if(!programId){
+        let defaultProgram = this.getDefaultProgram();
+        programId = defaultProgram ? defaultProgram.id : undefined;
+      }
+
+      if(!programId){
+        reject({error:App.err.notFound("No programId found")});
+      }else{
+        
+        let payload = mapRegistrationLinkPayload(data.payload, forLogin);//{payee_id: uid};
+        let reqUrl = this.url +"/"+ programId + "/payees/" + (forLogin ? "login-link" : "registration-link");
+        POST(reqUrl, {payload: payload, auth:{user: this.username, pass: this.password}})
+          .then(resp=>{
+            this.log.debug("registrationLink resp "+ JSON.stringify(resp));
+            let link = resp[forLogin ? "login_link" : "registration_link"];
+            if(link){
+              resolve({link: link, data: {programId: programId}});
+            }else{
+              reject(resp);
+            }
+          })
+          .catch(reject);
+
+      }
     });
   }
 
   payout(data){
     return new Promise((resolve,reject)=>{
+      let ret = {};
+
       this.log.debug("Payout from payoneer");
       this.log.debug("payout Data "+ JSON.stringify(data));
-      let programId = data.programId;
+      let programId = data.account ? data.account.programId : undefined;
 
-      let payload = {
-        payee_id: data.payout.uid,
-        amount: data.payout.amount,
-        client_reference_id: data.payout._id,
-        description: data.payout.description,
-        payout_date: moment().format('YYYY-MM-DD'),
-        currency: data.payout.currency
-        // group_id: ???
-      }
-      let ret = {};
-      POST(this.url +"/"+ programId + "/payouts", {payload: payload, auth:{user: this.username, pass: this.password}})
-      // Promise.resolve({code: 0, payout_id: "1122334455"})
-      // Promise.reject({audit_id: -1, code: 10301, description:"Insufficient balance", hint:"please contact Integration Support" })
-        .then(resp=>{
-          this.log.debug("payout resp "+ JSON.stringify(resp));
-          if(resp.code === 0){
-            ret.payoutId = resp.payout_id;
-            // ret.success = true;
-          }else{
-            // ret.success = false;
-            ret.error = App.err.notAcceptable(resp.description);
-            // reject(resp)
-          }
-          ret.response = resp;
-        })
-        .catch(err =>{
-          ret.response = err;
-          ret.error = err;
-          // ret.success = false;
-        })
-        
-        .then(res =>{
-          if(!ret.error){
-            resolve(ret);
-          }else{
+      if(!programId){
+        ret.error = App.err.notAcceptable("programId must be provided");
+        reject(ret);
+      }else{ 
+        let program = getProgram(this.programs, programId);
+        if(!program){
+          ret.error = App.err.notFound("program with id " + programId + " not found");
+          reject(ret);
+        }else{
+
+          if(program.currency != data.payout.currency){
+            ret.error = App.err.notAcceptable("invalid currency for selected program: "+data.payout.currency);
             reject(ret);
-          }
-        })
-        // .catch(reject);
-     
-      // resolve();
+          }else{
+
+            let payload = {
+              payee_id: data.payout.uid,
+              amount: data.payout.amount,
+              client_reference_id: data.payout._id,
+              description: data.payout.description,
+              payout_date: moment().format('YYYY-MM-DD'),
+              currency: data.payout.currency
+              // group_id: ???
+            }
+            
+            POST(this.url +"/"+ programId + "/payouts", {payload: payload, auth:{user: this.username, pass: this.password}})
+            // Promise.resolve({code: 0, payout_id: "1122334455"})
+            // Promise.reject({audit_id: -1, code: 10301, description:"Insufficient balance", hint:"please contact Integration Support" })
+              .then(resp=>{
+                this.log.debug("payout resp "+ JSON.stringify(resp));
+                if(resp.code === 0){
+                  ret.payoutId = resp.payout_id;
+                  // ret.success = true;
+                }else{
+                  // ret.success = false;
+                  ret.error = App.err.notAcceptable(resp.description);
+                  // reject(resp)
+                }
+                ret.response = resp;
+              })
+              .catch(err =>{
+                ret.response = err;
+                ret.error = err;
+                // ret.success = false;
+              })
+              .then(res =>{
+                if(!ret.error){
+                  resolve(ret);
+                }else{
+                  reject(ret);
+                }
+              })
+              // .catch(reject);
+           
+            // resolve();
+           }
+        }
+      }
     });
+  }
+
+  getDefaultProgram(){
+    return this.programs ? this.programs[0] : undefined;
   }
 
   ///////////-------------Lib------------------------------
@@ -399,6 +438,21 @@ function mapRegistrationLinkPayload(payload, forLogin){
   }
 
   return ret;
+}
+
+function getProgram(programs, id){
+  // let config = getServiceConfig(service);
+  let program = undefined;
+  if(programs){
+    program = programs[0];
+
+    programs.forEach(p =>{
+      if(p.id == id){
+        program = p;
+      }
+    });
+  }
+  return program;
 }
 
 function POST(url, data){
