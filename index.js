@@ -217,7 +217,7 @@ class Adapter{
 
       this.log.debug("Payout from payoneer");
       this.log.debug("payout Data "+ JSON.stringify(data));
-      let programId = data.account ? data.account.programId : undefined;
+      let programId = data.account && data.account.data ? data.account.data.programId : undefined;
 
       if(!programId){
         ret.error = App.err.notAcceptable("programId must be provided");
