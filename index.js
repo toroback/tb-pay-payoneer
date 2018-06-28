@@ -404,7 +404,7 @@ function mapRegistrationLinkPayload(payload, forLogin){
         if(company.legalType)           ret.payee.company.legal_type              = company.legalType;
         if(company.name)                ret.payee.company.name                    = company.name;
         if(company.url)                 ret.payee.company.url                     = company.url;
-        if(company.incorporatedCountry) ret.payee.company.incorporated_country    = company.incorporatedCountry;
+        if(company.incorporatedCountry) ret.payee.company.incorporated_country    = processCountryCode(company.incorporatedCountry);
         if(company.incorporatedState)   ret.payee.company.incorporated_state      = company.incorporatedState;
       }
 
@@ -426,7 +426,7 @@ function mapRegistrationLinkPayload(payload, forLogin){
         let address = payee.address;
         ret.payee.address = {};
 
-        if(address.country)       ret.payee.address.country         = address.country;
+        if(address.country)       ret.payee.address.country         = processCountryCode(address.country);
         if(address.state)         ret.payee.address.state           = address.state;
         if(address.addressLine1)  ret.payee.address.address_line_1  = address.addressLine1;
         if(address.addressLine2)  ret.payee.address.address_line_2  = address.addressLine2;
@@ -438,6 +438,16 @@ function mapRegistrationLinkPayload(payload, forLogin){
   }
 
   return ret;
+}
+
+function processCountryCode(code){
+
+  //   "Appendix B – Field Validations:"
+  // --> Country:    Two letters, in compliance with ISO 3166-1 alpha-2 Country Code List.  Note that UK is specifically used for United-Kingdom
+  if(code == "GB"){
+    return "UK";
+  }
+  return code;
 }
 
 function getProgram(programs, id){
