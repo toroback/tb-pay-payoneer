@@ -139,7 +139,7 @@ class Adapter{
       if(data.status == "accepted"){
         status = "accepted";
       }else if(data.status == "received"){
-        status = "accepted";
+        status = "received";
       }else if(data.status == "canceled"){
         status = "canceled";
       }else if(data.status == "rejected"){
@@ -245,8 +245,6 @@ class Adapter{
             }
             
             POST(this.url +"/"+ programId + "/payouts", {payload: payload, auth:{user: this.username, pass: this.password}})
-            // Promise.resolve({code: 0, payout_id: "1122334455"})
-            // Promise.reject({audit_id: -1, code: 10301, description:"Insufficient balance", hint:"please contact Integration Support" })
               .then(resp=>{
                 this.log.debug("payout resp "+ JSON.stringify(resp));
                 if(resp.code === 0){
