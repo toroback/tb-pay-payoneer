@@ -100,14 +100,6 @@ class Adapter{
         status = "canceled";
       }
 
-      // if(data.APPROVED){
-      //   status = "approved";
-      // }else if(data.DECLINE){
-      //   status = "rejected";
-      // }else if(data.ReusePayeeID){
-      //   status = "canceled";
-      // }
-
       let res = {
         ref : "account",
         data : {
@@ -124,17 +116,6 @@ class Adapter{
   processTransactionWebhook(data){
     return new Promise((resolve, reject) => {
       let status = undefined;
-
-      // if(data.PAYMENT){
-      //   status = "accepted";
-      // }else if(data.LoadCard /*|| data.LoadBank || data.LoadPaperCheck || data.LoadPayPal*/ || data.LoadMoney){
-      //   //LoadMoney engloba LoadBank, LoadPaperCheck, LoadPayPal
-      //   status = "received";
-      // }else if(data.CancelPayment){
-      //   status = "canceled";
-      // }else if(data.BankTranferPaymentFailed){
-      //   status = "rejected";
-      // }
 
       if(data.status == "accepted"){
         status = "accepted";
@@ -158,6 +139,25 @@ class Adapter{
         }  
       };
       resolve(res);
+    });
+  }
+
+
+  getBalance(data){
+    return new Promise((resolve, reject) => {
+      this.log.debug("getBalance Data "+ JSON.stringify(data));
+      let programId = data.programId 
+      if(!programId){
+        reject(App.err.badData("ProgramId needed"));
+      }else{
+        // /programs/{program_id}/balance
+        GET(this.url +"/"+ programId + "/balance", {auth:{user: this.username, pass: this.password}})
+          .then(res => {
+            res.programId = programId;
+            resolve({data: res, balance:{amount: res.balance, currency: res.currency}});
+          })
+          .catch(reject);
+      }
     });
   }
 
