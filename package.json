@@ -1,6 +1,6 @@
 {
   "name": "tb-pay-payoneer",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Pay service for tb-pay to extend Toroback functinoality",
   "main": "index.js",
   "scripts": {
