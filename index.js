@@ -96,6 +96,8 @@ class Adapter{
         status = "approved";
       }else if(data.status == "rejected"){
         status = "rejected";
+      }else if(data.status == "processing"){
+        status = "processing";
       }else if(data.status == "canceled"){
         status = "canceled";
       }
