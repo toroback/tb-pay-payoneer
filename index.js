@@ -156,7 +156,12 @@ class Adapter{
         GET(this.url +"/"+ programId + "/balance", {auth:{user: this.username, pass: this.password}})
           .then(res => {
             res.programId = programId;
-            resolve({data: res, balance:{amount: res.balance, currency: res.currency}});
+            if(res.code === 0){              
+              resolve({data: res, balance:{amount: res.balance, currency: res.currency}});
+            }else{
+              reject(App.err.badRequest(res.description, res));
+            }
+            
           })
           .catch(reject);
       }
