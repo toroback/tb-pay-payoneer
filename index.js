@@ -289,94 +289,6 @@ class Adapter{
     return this.programs ? this.programs[0] : undefined;
   }
 
-  ///////////-------------Lib------------------------------
-  //Register a credit card
-  //parameters
-  //   cardNumber:demoCreditCard.MasterCard,
-  //   cardExpiry:"1220",
-  //   cardType:"MASTERCARD",
-  //   cardHolderName:"Messi"  
-  /**
-   * Registra una tarjeta de credito
-   * @param  {Object} data Información de la tarjeta a registrar.
-   * @param  {String} data.merchantRef Identificador para la tarjeta de crédito. 
-   * @param  {String} data.cardNumber Número de la tarjeta de crédito.
-   * @param  {String} data.cardExpiry Fecha de vencimiento de la tarjeta de crédito en formato "MMYY" (Ej:0920 -> "Septiembre de 2020").
-   * @param  {String} data.cardType  Tipo de tarjeta de crédito (EJ: MASTERCARD).
-   * @param  {String} data.cardHolderName Nombre en la tarjeta de crédito.
-   * @param  {String} data.cvv CVV de la tarjeta de crédito.
-   * @return {Promise<PaymentRegisterSchema>} Promesa con la información del registro
-   */
-  // register(data) {
-  //   return new Promise((resolve, reject)=>{
-  //     let regts = new Date();
-  //     var dateTime =  moment.utc(regts).format("DD-MM-YYYY:HH:mm:ss:SSS");
-  //     var hash     =  hashData([
-  //       this.credential.TerminalID,
-  //       data.merchantRef,
-  //       dateTime,
-  //       data.cardNumber,
-  //       data.cardExpiry,
-  //       data.cardType,
-  //       data.cardHolderName,
-  //       this.credential.SharedSecret
-  //     ]);
-
-  //     // console.log("Register data" , data);
-  //     // console.log("Generated hash" , hash);
-  //     var payload  = {
-  //       "SECURECARDREGISTRATION":[
-  //           // {"MERCHANTREF"    : this.credential.Merchandt},
-  //           {"MERCHANTREF"    : data.merchantRef},
-  //           {"TERMINALID"     : this.credential.TerminalID},
-  //           {"DATETIME"       : dateTime},
-  //           {"CARDNUMBER"     : data.cardNumber},
-  //           {"CARDEXPIRY"     : data.cardExpiry},
-  //           {"CARDTYPE"       : data.cardType},
-  //           {"CARDHOLDERNAME" : data.cardHolderName},
-  //           {"HASH"           : hash}
-  //         ]
-  //     }
-  //     if(data.cvv){
-  //       payload.SECURECARDREGISTRATION.push({"CVV" : data.cvv});
-  //     }
-  //     // console.log("entra en payments.register globalonepay", payload)
-  //     req(this.url, this.port, xml(payload, { declaration: true }))
-  //     .then(resp=>{
-  //      // console.log(resp);
-  //       console.log("globalonepay register resp", JSON.stringify(resp));
-  //       if (resp.ERROR){
-  //         //manejar la situacion con error code
-  //         reject(createError(resp.ERROR));
-  //         //{ ERROR: { ERRORCODE: [ 'E08' ], ERRORSTRING: [ 'INVALID MERCHANTREF' ] } }
-  //         //{ ERROR: { ERRORCODE: [ 'E13' ], ERRORSTRING: [ 'INVALID HASH' ] } }
-  //         //{ ERROR: { ERRORCODE: [ 'E10' ], ERRORSTRING: [ 'INVALID CARDNUMBER' ] } }
-  //       }else {
-  //         //Guardar en bd
-  //         //verificar md5
-
-  //         let registration = {
-  //           reference: resp.SECURECARDREGISTRATIONRESPONSE.CARDREFERENCE[0],
-  //           cardHolderName: data.cardHolderName,
-  //           cardExpiry: data.cardExpiry,
-  //           cardNumber: hideCardNumber(data.cardNumber),
-  //           regts: moment.utc(resp.SECURECARDREGISTRATIONRESPONSE.DATETIME[0], 'DD-MM-YYYY:HH:mm:ss:SSS').toDate(),//regts,
-  //           regrespts: moment.utc(new Date()).toDate(),
-  //           active: true,
-  //           serviceProvider : this.providerName,
-  //           originalResponse: resp
-  //         }
-
-  //         resolve(registration);
-  //       }
-  //     })
-  //     .catch(err=>{
-  //       //MANEJAR ERROR
-  //       reject(err);
-  //     })    
-  //   })
-  // }
-
 }
 
 function mapRegistrationLinkPayload(payload, forLogin){
@@ -446,7 +358,7 @@ function mapRegistrationLinkPayload(payload, forLogin){
 }
 
 function processCountryCode(code){
-
+  code = code.toUpperCase();
   //   "Appendix B – Field Validations:"
   // --> Country:    Two letters, in compliance with ISO 3166-1 alpha-2 Country Code List.  Note that UK is specifically used for United-Kingdom
   if(code == "GB"){
